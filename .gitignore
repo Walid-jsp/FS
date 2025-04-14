@@ -1,0 +1,7 @@
+# Tout ignorer sauf src
+*
+
+# Mais ne PAS ignorer ces fichiers :
+!.gitignore
+!src/
+!src/**
