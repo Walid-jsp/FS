@@ -1,7 +1,10 @@
-# Tout ignorer sauf src
+
+# Ignorer tout
 *
 
-# Mais ne PAS ignorer ces fichiers :
+# Ne pas ignorer :
 !.gitignore
 !src/
 !src/**
+!assets/
+!assets/**
