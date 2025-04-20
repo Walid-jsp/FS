@@ -1,10 +1,20 @@
-
-# Ignorer tout
+# Ignorer tout par défaut
 *
 
-# Ne pas ignorer :
+# Ne pas ignorer le fichier .gitignore lui-même
 !.gitignore
+
+# Ne pas ignorer le dossier src (code source)
 !src/
 !src/**
+
+# Ne pas ignorer le dossier assets (models, textures, sons...)
 !assets/
 !assets/**
+
+# Ne pas ignorer le dossier public (index.html, favicon, etc.)
+!public/
+!public/**
+# Ne pas versionner les PDF
+*.pdf
+

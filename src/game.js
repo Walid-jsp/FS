@@ -15,9 +15,6 @@ import bioAnalyser from "../assets/models/sci-fi_scanner_prop_fan_art.glb";
 import boiteAMunitions from "../assets/models/sci-fi_ammo_box.glb";
 import tableau from "../assets/models/sci_fi_monitor.glb";
 
-
-
-
 class Game {
 
     #canvas;
@@ -27,11 +24,9 @@ class Game {
     #gameCamera;
     #shadowGenerator;
     #bInspector = false;
+    hasTeleported = false;
+    isPlayerReady = true;
 
-    // #elevator;
-    // #elevatorAggregate;
-    // #zoneA;
-    // #zoneB;
 
     #phase = 0.0;
     #vitesseY = 1.8;
@@ -66,10 +61,8 @@ class Game {
         this.#gameCamera.radius = -8;
         this.#gameCamera.maxCameraSpeed = 1;
         this.#gameCamera.cameraAcceleration = 0.025;
-        this.#gameCamera.rotationOffset = 0;
+        this.#gameCamera.rotationOffset = 180;
         this.#gameCamera.attachControl(this.#canvas, true);
-        //this.#gameCamera.setTarget(Vector3.Zero());
-        //this.#gameCamera.attachControl(this.#canvas, true);
 
         const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
         light.intensity = 0.7;
@@ -78,16 +71,10 @@ class Game {
         this.#shadowGenerator = new ShadowGenerator(1024, sLight);
         this.#shadowGenerator.useBlurExponentialShadowMap = true;
 
-        // const elevator = MeshBuilder.CreateDisc("sphere", { diameter: 2, segments: 32 }, scene);
-        // elevator.rotate(Vector3.Right(), Math.PI / 2)
-        // elevator.position.y = 0.1;
-        // this.#elevator = elevator;
-
         const ground = MeshBuilder.CreateGround("ground", { width: 640, height: 640, subdivisions: 128 }, scene);
         ground.checkCollisions = true;
 
         const matGround = new StandardMaterial("boue", scene);
-        //matGround.diffuseColor = new Color3(1, 0.4, 0);
         matGround.diffuseTexture = new Texture(floorUrl);
         matGround.diffuseTexture.uScale = 64;
         matGround.diffuseTexture.vScale = 64;
@@ -97,7 +84,6 @@ class Game {
 
         ground.material = matGround;
         ground.receiveShadows = true;
-        // Create a static box shape.
 
         const groundAggregate = new PhysicsAggregate(ground, PhysicsShapeType.BOX, {
             mass: 0, friction: 0.7, restitution: 0.2
@@ -105,54 +91,7 @@ class Game {
 
         groundAggregate.body.setMotionType(PhysicsMotionType.STATIC);
 
-        const matSphere = new StandardMaterial("silver", scene);
-        matSphere.diffuseColor = new Color3(0.8, 0.8, 1);
-        matSphere.specularColor = new Color3(0.4, 0.4, 1);
-       // elevator.material = matSphere;
-
-       // this.#shadowGenerator.addShadowCaster(elevator);
-
-
-
-
-        // this.#zoneA = MeshBuilder.CreateBox("zoneA", { width: 8, height: 0.2, depth: 8 }, scene);
-        // let zoneMat = new StandardMaterial("zoneA", scene);
-        // zoneMat.diffuseColor = Color3.Red();
-        // zoneMat.alpha = 0.5;
-        // this.#zoneA.material = zoneMat;
-        // this.#zoneA.position = new Vector3(12, 0.1, 12);
-
-
-        // this.#zoneB = MeshBuilder.CreateBox("zoneB", { width: 8, height: 0.2, depth: 8 }, scene);
-        // let zoneMatB = new StandardMaterial("zoneB", scene);
-        // zoneMatB.diffuseColor = Color3.Green();
-        // zoneMatB.alpha = 0.5;
-        // this.#zoneB.material = zoneMatB;
-        // this.#zoneB.position = new Vector3(-12, 0.1, -12);
-
-        // // Create a sphere shape and the associated body. Size will be determined automatically.
-        // this.#elevatorAggregate = new PhysicsAggregate(elevator, PhysicsShapeType.CONVEX_HULL, { mass: 1, restitution: 0.0 }, scene);
-        // this.#elevatorAggregate.body.setMotionType(PhysicsMotionType.ANIMATED);
-
-
-        // let boxDebug = MeshBuilder.CreateBox("boxDebug", { width: 0.5, depth: 0.5, height: 0.25 });
-        // boxDebug.position = new Vector3(10, 15, 5);
-        // this.#shadowGenerator.addShadowCaster(boxDebug);
-
-        // // Create a sphere shape and the associated body. Size will be determined automatically.
-        // const boxAggregate = new PhysicsAggregate(boxDebug, PhysicsShapeType.BOX, {
-        //     mass: .25, friction: 0.05, restitution: 0.3
-        // }, scene);
-
-        this.danceSound = new Sound("monSon", soundFile, this.scene, null, { loop: false, autoplay: true });
-
-        // SceneLoader.ImportMeshAsync("", "", dungeon, scene).then((result) => {
-        //     let dungeonMesh = result.meshes[0];
-        //     dungeonMesh.scaling = new Vector3(10, 10, 10);
-        //     dungeonMesh.position = new Vector3(0, 0, 0);
-        //     dungeonMesh.checkCollisions = true;
-        //     dungeonMesh.receiveShadows = true;
-        // });
+        this.danceSound = new Sound("monSon", soundFile, scene, null, { loop: false, autoplay: true });
 
         // labo
         SceneLoader.ImportMeshAsync("", "", labo, scene).then((result) => {
@@ -178,8 +117,7 @@ class Game {
                 }
             }
         
-            // 🔰 LIMITATION DU LABO - 3 murs + toit
-        
+            // Limitation du labo - 3 murs + toit
             const wallMat = new StandardMaterial("wallMat", scene);
             wallMat.diffuseColor = new Color3(0.75, 0.8, 0.85); // gris clair bleuté
             wallMat.specularColor = new Color3(0.2, 0.2, 0.2); // reflets discrets
@@ -187,7 +125,6 @@ class Game {
             wallMat.alpha = 1;
             wallMat.backFaceCulling = false;
             
-        
             const wallLeft = MeshBuilder.CreateBox("wallLeft", {
                 width: 1,
                 height: 12,
@@ -200,7 +137,6 @@ class Game {
             wallLeft.material = wallMat;
             wallLeft.checkCollisions = true;
             
-        
             // MUR DROIT
             const wallRight = MeshBuilder.CreateBox("wallRight", {
                 width: 1,
@@ -208,7 +144,7 @@ class Game {
                 depth: 32
             }, scene);
             wallRight.position = new Vector3(11.23, 6, 0);
-            wallRight.scaling=new Vector3(1,1,1);
+            wallRight.scaling = new Vector3(1, 1, 1);
             wallRight.material = wallMat;
             wallRight.checkCollisions = true;
         
@@ -220,148 +156,117 @@ class Game {
             }, scene);
             wallBack.scaling = new Vector3(2.2, 1, 1);
             wallBack.position = new Vector3(-2.34, 6, -13.18);
-            wallBack.rotation = new Vector3(0, 0, 0); // Facultatif si pas déjà tourné
+            wallBack.rotation = new Vector3(0, 0, 0);
             wallBack.material = wallMat;
             wallBack.checkCollisions = true;
-            
-        
-            // TOIT
-            const roof = MeshBuilder.CreateBox("roof", {
-                width: 32,
-                height: 1,
-                depth: 32
-            }, scene);
-            roof.position = new Vector3(0, 12, 0);
-            roof.material = wallMat;
-            roof.checkCollisions = true;
         });
-        
 
         // bioAnalyser
-
         SceneLoader.ImportMeshAsync("", "", bioAnalyser, scene).then((result) => {
-
             let bioAnalyser = result.meshes[0];
-            bioAnalyser.name = "bioAnalyser"
-
+            bioAnalyser.name = "bioAnalyser";
 
             bioAnalyser.scaling = new Vector3(0.02, 0.02, 0.02);
             bioAnalyser.position = new Vector3(6.05, 0.2, 5.54);
             bioAnalyser.rotation = new Vector3(0, Math.PI, 0);
 
-
-
-
             bioAnalyser.checkCollisions = true;
             bioAnalyser.receiveShadows = true;
 
-
             for (let childMesh of result.meshes) {
                 childMesh.refreshBoundingInfo(true);
-
                 if (childMesh.getTotalVertices() > 0) {
-
                     const meshAggregate = new PhysicsAggregate(childMesh, PhysicsShapeType.MESH, { mass: 0, friction: 0.4, restitution: 0.1 }, scene);
-
-
                     meshAggregate.body.setMotionType(PhysicsMotionType.STATIC);
-
-
                     childMesh.receiveShadows = true;
                 }
             }
-        })
+        });
 
-        //boite à munitions
-
+        // Boite à munitions
         SceneLoader.ImportMeshAsync("", "", boiteAMunitions, scene).then((result) => {
-
             let boiteAMunitions = result.meshes[0];
             boiteAMunitions.name = "boite à munitions";
-
 
             boiteAMunitions.position = new Vector3(-6.67, 0.76, 7.67);
             boiteAMunitions.rotation = new Vector3(0, Math.PI / 2, 0);
 
-
-
             boiteAMunitions.checkCollisions = true;
             boiteAMunitions.receiveShadows = true;
 
-
             for (let childMesh of result.meshes) {
                 childMesh.refreshBoundingInfo(true);
-
                 if (childMesh.getTotalVertices() > 0) {
-
                     const meshAggregate = new PhysicsAggregate(childMesh, PhysicsShapeType.MESH, { mass: 0, friction: 0.4, restitution: 0.1 }, scene);
-
-
                     meshAggregate.body.setMotionType(PhysicsMotionType.STATIC);
-
-
                     childMesh.receiveShadows = true;
                 }
             }
-        })
+        });
 
-        //tableau 
-
+        // Tableau
         SceneLoader.ImportMeshAsync("", "", tableau, scene).then((result) => {
-
             let tableau = result.meshes[0];
             tableau.name = "tableau de suivi";
-
 
             tableau.scaling = new Vector3(2, 2, 2);
             tableau.position = new Vector3(-15, 1, 6);
             tableau.rotation = new Vector3(0, Math.PI / 2, 0);
 
-
-
-
             tableau.checkCollisions = true;
             tableau.receiveShadows = true;
 
-
             for (let childMesh of result.meshes) {
                 childMesh.refreshBoundingInfo(true);
-
                 if (childMesh.getTotalVertices() > 0) {
-
                     const meshAggregate = new PhysicsAggregate(childMesh, PhysicsShapeType.MESH, { mass: 0, friction: 0.4, restitution: 0.1 }, scene);
-
-
                     meshAggregate.body.setMotionType(PhysicsMotionType.STATIC);
-
-
                     childMesh.receiveShadows = true;
                 }
             }
-        })
+        });
 
+        // Portail avec zone de téléportation - Correction apportée ici
         SceneLoader.ImportMeshAsync("", "", portail, scene).then((result) => {
             const portailMesh = result.meshes[0];
             portailMesh.name = "portail";
-
+        
             portailMesh.scaling = new Vector3(0.02, 0.02, 0.02);
-
-            // const playerPos = this.#player.transform.position;
             portailMesh.position = new Vector3(0.81, 2.28, 13.07);
             portailMesh.rotation = new Vector3(0, Math.PI, 0);
             portailMesh.checkCollisions = true;
             portailMesh.receiveShadows = true;
+        
+            // Zone de détection devant le portail - Agrandie pour faciliter l'intersection
+            // Zone de détection devant le portail - Invisible mais active
+const teleportZone = MeshBuilder.CreateBox("teleportZone", {
+    width: 4,
+    height: 4,
+    depth: 4
+}, scene);
+
+teleportZone.position = new Vector3(0.81, 2, 11.5);
+
+// Matériau transparent
+const zoneMat = new StandardMaterial("teleportZoneMat", scene);
+zoneMat.diffuseColor = new Color3(1, 1, 1);  // blanc par défaut, mais peu importe
+zoneMat.alpha = 0; // totalement transparent
+teleportZone.material = zoneMat;
+
+teleportZone.isVisible = false; // le mesh ne s'affiche pas du tout
+teleportZone.isPickable = false;
+teleportZone.checkCollisions = false;
+
+// On stocke la zone dans la scène pour pouvoir l'utiliser ailleurs
+scene.teleportZone = teleportZone;
+console.log("Zone de téléportation (invisible) prête à la position:", teleportZone.position);
 
             for (let childMesh of result.meshes) {
                 childMesh.refreshBoundingInfo(true);
-
                 if (childMesh.getTotalVertices() > 0) {
                     const meshAggregate = new PhysicsAggregate(childMesh, PhysicsShapeType.MESH, {
-                        mass: 0,
-                        friction: 0.4,
-                        restitution: 0.1
+                        mass: 0, friction: 0.4, restitution: 0.1
                     }, scene);
-
                     meshAggregate.body.setMotionType(PhysicsMotionType.STATIC);
                     childMesh.checkCollisions = true;
                     childMesh.receiveShadows = true;
@@ -369,10 +274,7 @@ class Game {
             }
         });
 
-
-
-
-
+        // Ennemi smilyFace
         SceneLoader.ImportMeshAsync("", "", smilyFace, scene).then((result) => {
             let smilyMesh = result.meshes[0];
             smilyMesh.scaling = new Vector3(0.05, 0.05, 0.05);
@@ -381,49 +283,13 @@ class Game {
             smilyMesh.receiveShadows = true;
         });
 
-        // SceneLoader.ImportMeshAsync("", "", labo, scene).then((result) => {
-        //     let dungeonMesh = result.meshes[0];
-        //     dungeonMesh.scaling = new Vector3(3,3,3);
-        //     dungeonMesh.position = new Vector3(0, 0, 0); 
-        //     dungeonMesh.checkCollisions = true;
-        //     dungeonMesh.receiveShadows = true;
-        // });
-
-
-
-
-        //    const skybox = MeshBuilder.CreateBox("skyBox", { size: 1000.0 }, scene);
-        // const skyboxMaterial = new StandardMaterial("skyBoxMaterial", scene);
-
-        // // Désactive le backFaceCulling pour afficher l'intérieur de la box
-        // skyboxMaterial.backFaceCulling = false;
-
-        // // Charge ton image PNG comme une texture simple
-        // skyboxMaterial.emissiveTexture = new Texture(darkSky, scene);
-        // skyboxMaterial.emissiveTexture.coordinatesMode = Texture.SKYBOX_MODE;
-
-        // // Désactive l'effet de la lumière sur la skybox
-        // skyboxMaterial.diffuseColor = new Color3(0, 0, 0);
-        // skyboxMaterial.specularColor = new Color3(0, 0, 0);
-
-        // // Applique le matériau à la skybox
-        // skybox.material = skyboxMaterial;
-
-        // // Désactive le tone mapping pour éviter les problèmes de couleur
-        // scene.imageProcessingConfiguration.toneMappingEnabled = false;
-
+        // SkyBox - sphère avec texture
         const sphere1 = MeshBuilder.CreateSphere("skySphere", { diameter: 1000 }, scene);
-
-        // Ajouter un matériau
         const skyMaterial = new StandardMaterial("skyMaterial", scene);
         skyMaterial.backFaceCulling = false;
         skyMaterial.diffuseTexture = new Texture(darkSky, scene);
         skyMaterial.emissiveTexture = new Texture(darkSky, scene);
-
-        // Appliquer le matériau à la sphère
         sphere1.material = skyMaterial;
-
-
 
         return scene;
     }
@@ -461,18 +327,15 @@ class Game {
     }
 
     endGame() {
-
+        // Méthode vide pour une implémentation future
     }
 
     gameLoop() {
-
         const divFps = document.getElementById("fps");
         this.#engine.runRenderLoop(() => {
-
             this.updateGame();
 
-
-            //Debug
+            // Debug
             if (this.actions["KeyI"]) {
                 this.#bInspector = !this.#bInspector;
 
@@ -487,27 +350,92 @@ class Game {
             this.#gameScene.render();
         });
     }
-
     updateGame() {
+        if (!this.isPlayerReady) return; // ⛔ Ne met pas à jour tant que le joueur est en cours de rechargement
+    
         let delta = this.#engine.getDeltaTime() / 1000.0;
-
         this.#player.update(this.inputMap, this.actions, delta);
+    
+        // Vérification de téléportation
+        const teleportZone = this.#gameScene.teleportZone;
+    
+        if (
+            teleportZone &&
+            this.#player.transform &&
+            this.#player.transform.intersectsMesh(teleportZone, false) &&
+            !this.hasTeleported
+        ) {
+            console.log("⚠️ Intersection détectée avec la zone de téléportation!");
+            this.hasTeleported = true;
+    
+          // 🌌 Effet de portail stylé
+const portalDisc = MeshBuilder.CreateDisc("portalDisc", { radius: 6, tessellation: 64 }, this.#gameScene);
+portalDisc.position = this.#gameCamera.position.clone().add(new Vector3(0, 0, 6));
+portalDisc.billboardMode = Mesh.BILLBOARDMODE_ALL;
 
-        this.#phase += this.#vitesseY * delta;
-       // this.#elevatorAggregate.body.setLinearVelocity(new Vector3(0, Math.sin(this.#phase)), 0);
+const gradientMat = new StandardMaterial("portalMat", this.#gameScene);
+gradientMat.emissiveColor = new Color3(0.5, 0.3, 1); // Violet lumineux
+gradientMat.alpha = 0.9;
+gradientMat.disableLighting = true;
+portalDisc.material = gradientMat;
 
-    //     const hudText = document.getElementById("hudText");
-    //     if (this.#elevator.intersectsMesh(this.#zoneA, false)) {
-    //         this.#elevator.material.emissiveColor = Color3.Red();
-    //         hudText.innerText = "Zone A atteinte !";
-    //     } else if (this.#elevator.intersectsMesh(this.#zoneB, false)) {
-    //         this.#elevator.material.emissiveColor = Color3.Green();
-    //         hudText.innerText = "Zone B atteinte !";
-    //     } else {
-    //         this.#elevator.material.emissiveColor = Color3.Black();
-    //         hudText.innerText = "";
-    //     }
+// ✅ Halo secondaire
+const energyHalo = MeshBuilder.CreateDisc("haloDisc", { radius: 2, tessellation: 64 }, this.#gameScene);
+energyHalo.position = this.#gameCamera.position.clone().add(new Vector3(0, 0, 5.9));
+energyHalo.billboardMode = Mesh.BILLBOARDMODE_ALL;
+
+const haloMat = new StandardMaterial("haloMat", this.#gameScene);
+haloMat.emissiveColor = new Color3(0.2, 1, 1); // Cyan lumineux
+haloMat.alpha = 0.6;
+haloMat.disableLighting = true;
+energyHalo.material = haloMat;
+
+// 🌠 Animation visuelle progressive
+const animateFade = () => {
+    let step = 0;
+    const interval = setInterval(() => {
+        step += 0.05;
+        gradientMat.alpha = Math.max(0, 0.9 - step);
+        haloMat.alpha = Math.max(0, 0.6 - step * 1.5);
+        portalDisc.scaling.scaleInPlace(0.98);
+        energyHalo.scaling.scaleInPlace(0.95);
+        if (gradientMat.alpha <= 0) {
+            clearInterval(interval);
+            portalDisc.dispose();
+            energyHalo.dispose();
+        }
+    }, 30);
+};
+
+            // 🚀 Téléportation vers Zaranthis
+            console.log("🚀 Tentative de téléportation avec nouvelle méthode...");
+            setTimeout(() => {
+                try {
+                    const destination = new Vector3(1000, 10, 0);
+                    this.isPlayerReady = false;
+    
+                    if (this.#player.gameObject) {
+                        const oldCamera = this.#gameCamera;
+    
+                        this.#player = new Player(destination.x, destination.y, destination.z, this.#gameScene);
+                        this.#player.init().then(() => {
+                            oldCamera.lockedTarget = this.#player.transform;
+                            this.#shadowGenerator.addShadowCaster(this.#player.gameObject, true);
+                            this.isPlayerReady = true;
+                            console.log("✅ Joueur téléporté avec succès !");
+                        });
+                    }
+                } catch (error) {
+                    console.error("Erreur téléportation :", error);
+                }
+    
+                // Démarre l'effet de disparition du flash
+                animateFade();
+
+            }, 500);
+        }
     }
+    
 }
 
 export default Game;

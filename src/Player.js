@@ -1,7 +1,8 @@
 import { Matrix, Mesh, MeshBuilder, Physics6DoFConstraint,Sound, PhysicsAggregate, PhysicsConstraintAxis, PhysicsMotionType, PhysicsShapeType, Quaternion, SceneLoader, TransformNode, Vector3, Ray } from "@babylonjs/core";
 
-import astronaut from "../assets/models/dark_astronaut.glb";
+import astronaut from "../assets/models/toon_astronaut.glb";
 import soundFile from "../assets/sounds/Candy shop cut.mp3";
+
 
 const USE_FORCES = false;
 let RUNNING_SPEED = 8;
@@ -53,15 +54,29 @@ class Player {
 
     async init() {
         this.danceSound = new Sound("monSon", soundFile, this.scene, null, { loop: false, autoplay: false });
+    
+        // Import du modèle
         const result = await SceneLoader.ImportMeshAsync("", "", astronaut, this.scene);
         this.gameObject = result.meshes[0];
-        this.gameObject.scaling = new Vector3(0.1, 0.1, 0.1);
+        this.gameObject.name = "astronaut";
+        this.gameObject.scaling = new Vector3(1, 1, 1);
         this.gameObject.position = new Vector3(0, -PLAYER_HEIGHT / 2, 0);
-        this.gameObject.rotate(Vector3.UpReadOnly, Math.PI);
-        this.gameObject.bakeCurrentTransformIntoVertices();
         this.gameObject.checkCollisions = true;
-
-        this.capsuleAggregate = new PhysicsAggregate(this.transform, PhysicsShapeType.CAPSULE, { mass: 1, friction: 1, restitution: 0.1 }, this.scene);
+    
+        // Supprime la rotation sur l’objet mesh : on va appliquer la rotation au TransformNode
+        // this.gameObject.rotate(Vector3.UpReadOnly, Math.PI); ❌ inutile
+        this.transform.rotation = new Vector3(0, Math.PI, 0); // ✅ orientation vers la map
+    
+        // Fusionner la transformation dans le mesh (si vraiment nécessaire)
+        this.gameObject.bakeCurrentTransformIntoVertices();
+    
+        // Collision et physique
+        this.capsuleAggregate = new PhysicsAggregate(this.transform, PhysicsShapeType.CAPSULE, {
+            mass: 1,
+            friction: 1,
+            restitution: 0.1
+        }, this.scene);
+    
         this.capsuleAggregate.body.setMotionType(PhysicsMotionType.DYNAMIC);
         this.capsuleAggregate.body.setMassProperties({
             inertia: new Vector3(0, 0, 0),
@@ -69,19 +84,25 @@ class Player {
             mass: 1,
             inertiaOrientation: new Quaternion(0, 0, 0, 1)
         });
+    
         this.capsuleAggregate.body.setLinearDamping(USE_FORCES ? 0.8 : 0.5);
         this.capsuleAggregate.body.setAngularDamping(USE_FORCES ? 10.0 : 0.5);
-
+    
+        // Attacher le mesh au corps invisible
         this.gameObject.parent = this.transform;
-        // this.animationsGroup = result.animationGroups;
-        // this.animationsGroup[0].stop();
-        // this.idleAnim = this.scene.getAnimationGroupByName('Idle');
-        // this.runAnim = this.scene.getAnimationGroupByName('Running');
-        // this.walkAnim = this.scene.getAnimationGroupByName('Walking');
-        // this.danceAnim = this.scene.getAnimationGroupByName('Dancing');
-        // this.JumpAnim = this.scene.getAnimationGroupByName('JumpAttack');
-        // this.idleAnim.start(true, 1.0, this.idleAnim.from, this.idleAnim.to, false);
+    
+        // 🎬 Animations
+        this.animationsGroup = result.animationGroups;
+        this.animationsGroup.forEach(group => group.stop());
+    
+        this.idleAnim = this.scene.getAnimationGroupByName('idle');
+        this.runAnim = this.scene.getAnimationGroupByName('run');
+        this.JumpAnim = this.scene.getAnimationGroupByName('walk'); // Remplacer plus tard si tu as une anim jump
+    
+        // Démarrage en idle
+        this.idleAnim?.start(true, 1.0, this.idleAnim.from, this.idleAnim.to, false);
     }
+    
 
     checkGround() {
         const origin = this.transform.position.add(new Vector3(0, -PLAYER_HEIGHT / 2, 0)); // bas du corps
