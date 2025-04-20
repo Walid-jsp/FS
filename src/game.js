@@ -1,10 +1,13 @@
 import { ActionManager, Sound, Color3, Color4, FollowCamera, FreeCamera, PhysicsImpostor, SceneLoader, CubeTexture, HavokPlugin, HemisphericLight, InterpolateValueAction, KeyboardEventTypes, Mesh, MeshBuilder, ParticleSystem, PhysicsAggregate, PhysicsMotionType, PhysicsShapeType, Scene, SetValueAction, ShadowGenerator, SpotLight, StandardMaterial, Texture, Vector3 } from "@babylonjs/core";
 import { Inspector } from '@babylonjs/inspector';
+import Player from "./Player";
+import Zaranthis from "./Zaranthis";
+
 import HavokPhysics from "@babylonjs/havok";
 
 import floorUrl from "../assets/textures/floor.png";
 import floorBumpUrl from "../assets/textures/floor_bump.png";
-import Player from "./Player";
+
 import soundFile from "../assets/sounds/Candy shop cut.mp3";
 import dungeon from "../assets/textures/the_trees_dungeon.glb";
 import darkSky from "../assets/textures/darkSky.png";
@@ -35,6 +38,8 @@ class Game {
     actions = {};
 
     #player;
+    #zaranthis;
+
     danceSound;
 
     constructor(canvas, engine) {
@@ -302,6 +307,11 @@ console.log("Zone de téléportation (invisible) prête à la position:", telepo
         this.#havokInstance = await this.getInitializedHavok();
         this.#gameScene = this.createScene();
         this.#player = new Player(3, 10, 3, this.#gameScene);
+        this.#zaranthis = new Zaranthis(this.#gameScene);
+        await this.#zaranthis.load();
+        
+
+
 
         await this.#player.init();
         this.#gameCamera.lockedTarget = this.#player.transform;
@@ -411,23 +421,42 @@ const animateFade = () => {
             console.log("🚀 Tentative de téléportation avec nouvelle méthode...");
             setTimeout(() => {
                 try {
-                    const destination = new Vector3(1000, 10, 0);
+                    const destination = Zaranthis.getPosition().add(new Vector3(0, 10, 0));
                     this.isPlayerReady = false;
             
                     if (this.#player.gameObject) {
                         const oldCamera = this.#gameCamera;
             
+                        // Recrée proprement le joueur à la nouvelle position
+                        this.#player = new Player(destination.x, destination.y, destination.z, this.#gameScene);
                         this.#player = new Player(destination.x, destination.y, destination.z, this.#gameScene);
                         this.#player.init().then(() => {
                             oldCamera.lockedTarget = this.#player.transform;
+                            oldCamera.position = destination.add(new Vector3(0, 14, -8));
                             this.#shadowGenerator.addShadowCaster(this.#player.gameObject, true);
-            
-                            // 🆕 Déplacement manuel de la caméra
-                            oldCamera.position = new Vector3(1000, 14, -8); // ↩️ ajustable
+                        
+                            // Recharge les animations depuis le nouveau modèle
+                            this.#player.reloadAnimations();
+                        
+                            // Force l’animation idle à s’activer immédiatement
+                            this.#player.stopAllAnimations();
+                            if (this.#player.idleAnim) {
+                                this.#player.idleAnim.start(true);
+                            }
+                        
+                            // Petit timeout pour s’assurer que tout est prêt
+                            setTimeout(() => {
+                                this.#player.update(this.inputMap, this.actions, 0.016);
+                            }, 100); // ✅ Ce délai permet d’éviter un conflit avec l’instanciation
+                        
+                            this.#zaranthis.load();
                             this.isPlayerReady = true;
-            
-                            console.log("✅ Joueur et caméra téléportés avec succès !");
+                            console.log("✅ Joueur, caméra et animations relancés !");
                         });
+                        
+
+                        
+                        
                     }
                 } catch (error) {
                     console.error("Erreur téléportation :", error);
@@ -435,6 +464,7 @@ const animateFade = () => {
             
                 animateFade();
             }, 500);
+            
             
         }
     }
