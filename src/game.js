@@ -413,26 +413,29 @@ const animateFade = () => {
                 try {
                     const destination = new Vector3(1000, 10, 0);
                     this.isPlayerReady = false;
-    
+            
                     if (this.#player.gameObject) {
                         const oldCamera = this.#gameCamera;
-    
+            
                         this.#player = new Player(destination.x, destination.y, destination.z, this.#gameScene);
                         this.#player.init().then(() => {
                             oldCamera.lockedTarget = this.#player.transform;
                             this.#shadowGenerator.addShadowCaster(this.#player.gameObject, true);
+            
+                            // 🆕 Déplacement manuel de la caméra
+                            oldCamera.position = new Vector3(1000, 14, -8); // ↩️ ajustable
                             this.isPlayerReady = true;
-                            console.log("✅ Joueur téléporté avec succès !");
+            
+                            console.log("✅ Joueur et caméra téléportés avec succès !");
                         });
                     }
                 } catch (error) {
                     console.error("Erreur téléportation :", error);
                 }
-    
-                // Démarre l'effet de disparition du flash
+            
                 animateFade();
-
             }, 500);
+            
         }
     }
     
