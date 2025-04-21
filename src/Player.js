@@ -48,7 +48,7 @@ class Player {
     
         this.gameObject = result.meshes[0];
         this.gameObject.name = "astronaut";
-        this.gameObject.scaling = new Vector3(1, 1, 1);
+        this.gameObject.scaling = new Vector3(1.2, 1.2, 1.2);
         this.gameObject.position = new Vector3(0, -PLAYER_HEIGHT / 2, 0);
         this.gameObject.checkCollisions = true;
     

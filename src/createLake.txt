@@ -1,0 +1,33 @@
+async createWaterLake() {
+    const center = Zaranthis.getPosition();
+    const lakePosition = center.add(new Vector3(-80, 0.05, 120)); // position du lac dans la map
+
+    const waterMesh = MeshBuilder.CreateGround("waterMesh", {
+        width: 120,
+        height: 120,
+        subdivisions: 32
+    }, this.scene);
+
+    waterMesh.position = lakePosition;
+
+    const waterMaterial = new WaterMaterial("waterMaterial", this.scene);
+    waterMaterial.bumpTexture = new Texture("https://assets.babylonjs.com/environments/waterbump.png", this.scene);
+    waterMaterial.windForce = -5;
+    waterMaterial.waveHeight = 0.4;
+    waterMaterial.bumpHeight = 0.1;
+    waterMaterial.waveLength = 0.1;
+    waterMaterial.colorBlendFactor = 0.3;
+    waterMaterial.windDirection = new Vector3(1, 1);
+    waterMaterial.waterColor = new Color3(0.1, 0.3, 0.6);
+
+    waterMaterial.addToRenderList(this.scene.getMeshByName("zaranthisGround"));
+
+    waterMesh.material = waterMaterial;
+
+    const waterAggregate = new PhysicsAggregate(waterMesh, PhysicsShapeType.BOX, {
+        mass: 0,
+        friction: 0.9,
+        restitution: 0.1
+    }, this.scene);
+    waterAggregate.body.setMotionType(PhysicsMotionType.STATIC);
+}
